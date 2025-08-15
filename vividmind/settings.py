@@ -117,8 +117,17 @@ WSGI_APPLICATION = 'vividmind.wsgi.application'
 # }
 
 DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'))
+    'default': dj_database_url.parse(
+        config(
+            'DATABASE_URL',
+            default='postgres://vividmind_user:supersecretpassword@db:5432/vividmind_db'
+        )
+    )
 }
+
+# Redis configuration
+REDIS_HOST = config('REDIS_HOST', default='redis://redis:6379')
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators

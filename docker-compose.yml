@@ -19,7 +19,12 @@ services:
 
   web:
     build: .
-    command: gunicorn vividmind_central.wsgi:application --bind 0.0.0.0:8000 --workers 1
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        gunicorn vividmind_central.wsgi:application --bind 0.0.0.0:8000 --workers 1
+      "
     volumes:
       - .:/app
       - static_volume:/app/static   # ensure static files are accessible to Nginx
@@ -38,7 +43,7 @@ services:
       - .:/app
       - static_volume:/app/static
     depends_on:
-      - web
+      - db
       - redis
     env_file:
       - .env
@@ -50,11 +55,11 @@ services:
       - .:/app
       - static_volume:/app/static
     depends_on:
-      - web
+      - db
       - redis
     env_file:
       - .env
 
 volumes:
   postgres_data:
-  static_volume:  # shared volume for static files
+  static_volume:
