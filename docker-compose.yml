@@ -21,7 +21,25 @@ services:
 
   web:
     build: .
-    entrypoint: ["/app/entrypoint.sh"]
+    command: >
+      sh -c "
+        echo 'Waiting for Postgres...'; 
+        until nc -z db 5432; do sleep 0.5; done; 
+        echo 'Postgres is ready.'; 
+        echo 'Waiting for Redis...'; 
+        until nc -z redis 6379; do sleep 0.5; done; 
+        echo 'Redis is ready.'; 
+        echo 'Running makemigrations...'; 
+        python manage.py makemigrations customer; 
+        python manage.py makemigrations sessionbot; 
+        python manage.py makemigrations creator; 
+        echo 'Running migrate...'; 
+        python manage.py migrate; 
+        echo 'Collecting static files...'; 
+        python manage.py collectstatic --noinput; 
+        echo 'Starting Gunicorn...'; 
+        gunicorn vividmind.wsgi:application --bind 0.0.0.0:8000 --workers 1
+      "
     volumes:
       - .:/app
       - static_volume:/app/static
@@ -36,7 +54,14 @@ services:
 
   celery:
     build: .
-    command: celery -A vividmind worker -l info
+    command: >
+      sh -c "
+        echo 'Waiting for Postgres...'; 
+        until nc -z db 5432; do sleep 0.5; done; 
+        echo 'Waiting for Redis...'; 
+        until nc -z redis 6379; do sleep 0.5; done; 
+        celery -A vividmind worker -l info
+      "
     volumes:
       - .:/app
     depends_on:
@@ -47,7 +72,14 @@ services:
 
   celery-beat:
     build: .
-    command: celery -A vividmind beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: >
+      sh -c "
+        echo 'Waiting for Postgres...'; 
+        until nc -z db 5432; do sleep 0.5; done; 
+        echo 'Waiting for Redis...'; 
+        until nc -z redis 6379; do sleep 0.5; done; 
+        celery -A vividmind beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+      "
     volumes:
       - .:/app
     depends_on:

@@ -1,34 +1,29 @@
-# Use official Python 3.11 slim image
+# Base image
 FROM python:3.11-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 # Set work directory
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
-    gcc \
+    build-essential \
     libpq-dev \
-    dos2unix \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy project
 COPY . /app/
-
-# Ensure entrypoint.sh has correct line endings and is executable
-RUN dos2unix /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
 
 # Expose port
 EXPOSE 8000
 
-# Run entrypoint script
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Default command (will be overridden in docker-compose.yml)
+CMD ["gunicorn", "vividmind.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1"]
