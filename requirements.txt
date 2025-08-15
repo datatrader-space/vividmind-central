@@ -49,3 +49,5 @@ eventlet
 django-jsonform
 slackclient == 2.9.4 
 dj_database_url
+gunicorn
+whitenoise>=6.6.0
