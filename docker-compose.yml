@@ -35,7 +35,6 @@ services:
         python manage.py makemigrations creator; 
         echo 'Running migrate...'; 
         python manage.py migrate; 
-        python manage.py migrate django_celery_beat
         echo 'Collecting static files...'; 
         python manage.py collectstatic --noinput; 
         echo 'Starting Gunicorn...'; 
@@ -52,11 +51,6 @@ services:
     env_file:
       - .env
     restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "python manage.py showmigrations | grep 'django_celery_beat.*\\[X\\]'"]
-      interval: 5s
-      retries: 20
-      start_period: 5s
 
   celery:
     build: .
@@ -84,16 +78,15 @@ services:
         until nc -z db 5432; do sleep 0.5; done; 
         echo 'Waiting for Redis...'; 
         until nc -z redis 6379; do sleep 0.5; done; 
-        echo 'Waiting for web migrations...'; 
-        until curl -f http://web:8000/health/ 2>/dev/null; do sleep 2; done; 
+        echo 'Waiting for django_celery_beat_periodictask table...'; 
+        until python manage.py dbshell -c '\dt django_celery_beat_periodictask' 2>/dev/null; do sleep 2; done; 
         echo 'Starting celery-beat...'; 
         celery -A vividmind beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
       "
     volumes:
       - .:/app
     depends_on:
-      web:
-        condition: service_healthy
+      - web
     env_file:
       - .env
     restart: always
