@@ -21,12 +21,7 @@ services:
 
   web:
     build: .
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        python manage.py collectstatic --noinput &&
-        gunicorn vividmind.wsgi:application --bind 0.0.0.0:8000 --workers 1
-      "
+    entrypoint: ["/app/entrypoint.sh"]
     volumes:
       - .:/app
       - static_volume:/app/static
@@ -45,8 +40,7 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - db
-      - redis
+      - web
     env_file:
       - .env
     restart: always
@@ -57,8 +51,7 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - db
-      - redis
+      - web
     env_file:
       - .env
     restart: always
